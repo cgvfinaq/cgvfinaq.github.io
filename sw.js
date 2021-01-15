@@ -65,10 +65,10 @@ self.addEventListener("fetch", function (request) {
             [key, url, size] = determineFileToDownload(url);
 
             if (key in mSizes && mSizes[key] < size) {
-                return getFile(key, url, cache, size, request.currentTarget.origin);
+                return getFile(key, url, cache, size, request.target.origin);
             }
             return cache.match(key).then(function (cachedResponse) {
-                let fetchPromise = getFile(key, url, cache, size, request.currentTarget.origin);
+                let fetchPromise = getFile(key, url, cache, size, request.target.origin);
                 return cachedResponse || fetchPromise;
             });
         })
