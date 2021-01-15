@@ -7,7 +7,7 @@ var largestBreakPoint = 0;
 var mSizes = null;
 var mHasPrefetched = false;
 
-self.addEventListener("install", function (request) {
+self.addEventListener("install", function (extendableEvent) {
     console.log("SW: Installed and updated");
     caches
         .open(staticCache)
@@ -30,7 +30,7 @@ self.addEventListener("install", function (request) {
         })
     self.skipWaiting();
 });
-self.addEventListener("activate", function (b) {
+self.addEventListener("activate", function (extendableEvent) {
     console.log("SW: Activate");
     self.clients.claim();
     caches
@@ -47,14 +47,17 @@ self.addEventListener("activate", function (b) {
             console.error(b);
         })
 });
-self.addEventListener("fetch", function (request) {
-    let url = request.request.url;
+self.addEventListener("fetch", function (fetchEvent) {
+    if (fetchEvent.request === undefined || fetchEvent.respondWith == undefined) {
+        return;
+    }
 
+    let url = fetchEvent.request.url;
     if ("http" !== url.slice(0, 4)) {
         return;
     }
 
-    request.respondWith(
+    fetchEvent.respondWith(
         caches.open(staticCache).then(async function (cache) {
             if (mSizes == null) {
                 await cache.match('sizes').then(async function (cachedResponse) {
@@ -65,20 +68,20 @@ self.addEventListener("fetch", function (request) {
             [key, url, size] = determineFileToDownload(url);
 
             if (key in mSizes && mSizes[key] < size) {
-                return getFile(key, url, cache, size, request.target.origin);
+                return getFile(key, url, cache, size);
             }
             return cache.match(key).then(function (cachedResponse) {
-                let fetchPromise = getFile(key, url, cache, size, request.target.origin);
+                let fetchPromise = getFile(key, url, cache, size);
                 return cachedResponse || fetchPromise;
             });
         })
     );
 });
-async function getFile(key, url, cache, size, origin) {
+async function getFile(key, url, cache, size) {
     try {
         let networkResponse = await fetch(url);
         if (200 != networkResponse.status) {
-            if (404 == networkResponse.status && isSameOrigin(url, origin) && url.indexOf('.') === -1) {
+            if (404 == networkResponse.status && isSameOrigin(url) && url.indexOf('.') === -1) {
                 let basename = url.split("/").pop();
                 return modifyResponse(networkResponse, { 'Did you mistype it?': `Did you mistype: ${basename}` });
             }
@@ -94,7 +97,7 @@ async function getFile(key, url, cache, size, origin) {
                 }
             }
         } else {
-            if (isSameOrigin(url, origin)) {
+            if (isSameOrigin(url)) {
                 key = new URL(networkResponse.url).pathname;
             }
             cache.put(key, networkResponse.clone());
@@ -105,10 +108,10 @@ async function getFile(key, url, cache, size, origin) {
         return new Response(`Fetching ${url} has error: ${error}`, { status: 500});
     }
 }
-function isSameOrigin(url, origin) {
-    return url.startsWith('/') || url.startsWith(origin);
+function isSameOrigin(url) {
+    return url.startsWith('/') || url.startsWith(this.location.origin);
 }
-function prefetchRestOfSite(key, cache, size, origin) {
+function prefetchRestOfSite(key, cache, size) {
     if (mSizes == null || mHasPrefetched || !key.endsWith("jpg")) {
         return;
     }
@@ -121,7 +124,7 @@ function prefetchRestOfSite(key, cache, size, origin) {
 
             cache.match(key).then(function (cachedResponse) {
                 if (cachedResponse === undefined) {
-                    getFile(key, imagePath(`images/${image}${suffix}.jpg`), cache, size, origin);
+                    getFile(key, imagePath(`images/${image}${suffix}.jpg`), cache, size);
                 }
             });
         }
@@ -132,7 +135,7 @@ function prefetchRestOfSite(key, cache, size, origin) {
 
             cache.match(key).then(function (cachedResponse) {
                 if (cachedResponse === undefined) {
-                    getFile(key, key, cache, size, origin);
+                    getFile(key, key, cache, size);
                 }
             });
         }
