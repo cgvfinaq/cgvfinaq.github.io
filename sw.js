@@ -81,8 +81,8 @@ async function getFile(key, url, cache, size) {
     try {
         let networkResponse = await fetch(url);
         if (200 != networkResponse.status) {
-            if (404 == networkResponse.status && isSameOrigin(url) && url.indexOf('.') === -1) {
-                let basename = url.split("/").pop();
+            let basename = url.split("/").pop();
+            if (404 == networkResponse.status && isSameOrigin(url) && basename.indexOf('.') === -1) {
                 return modifyResponse(networkResponse, { 'Did you mistype it?': `Did you mistype: ${basename}` });
             }
             return networkResponse;
