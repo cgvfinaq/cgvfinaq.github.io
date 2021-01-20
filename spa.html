@@ -89,7 +89,18 @@
   };
   
 	replaceAmpImages = html => {
-		html = html.replace(/<amp\-img .+? src="images\/([a-z-.\d]+?)\.webp".+?alt="([^"]+)".+?<amp\-img fallback.+?<\/amp\-img>.+?<\/amp\-img>/g, (match, theName, thePictureAlt) => {
+		html = html.replace(/<amp\-carousel(.|\s)+?<\/amp\-carousel>/, match => {
+			return match.replace(/<amp\-img .+? src="images\/([a-z-.\d]+)\.jpg".+?alt="([^"]+)".+?<\/amp\-img>/g, (match, theName, thePictureAlt) => {
+				theName = theName.split('.')[0];
+				return `<picture>
+					<source srcset="images/${theName}.webp 2000w,images/${theName}.1440.webp 1440w,images/${theName}.1080.webp 1080w,images/${theName}.640.webp 640w">
+					<source srcset="images/${theName}.jpg 2000w,images/${theName}.1440.jpg 1440w,images/${theName}.1080.jpg 1080w,images/${theName}.640.jpg 640w">
+					<img src="images/${theName}.jpg" alt="${thePictureAlt}">
+				</picture>`;
+			});
+		});
+		
+		html = html.replace(/<amp\-img .+?src="images\/([a-z-.\d]+)\.webp".+?alt="([^"]+)".+?fallback.+?<\/amp-img.+?<\/amp-img>/g, (match, theName, thePictureAlt) => {
 			theName = theName.split('.')[0];
 			return `<picture>
 				<source srcset="images/${theName}.webp 2000w,images/${theName}.1440.webp 1440w,images/${theName}.1080.webp 1080w,images/${theName}.640.webp 640w">
@@ -98,15 +109,6 @@
 			</picture>`;
 		});
 
-		// Replace slides
-		html = html.replace(/<amp\-img .+? src="images\/([a-z-.\d]+?)\.jpg".+?alt="([^"]+)".+?<\/amp\-img>/g, (match, theName, thePictureAlt) => {
-			theName = theName.split('.')[0];
-			return `<picture>
-				<source srcset="images/${theName}.webp 2000w,images/${theName}.1440.webp 1440w,images/${theName}.1080.webp 1080w,images/${theName}.640.webp 640w">
-				<source srcset="images/${theName}.jpg 2000w,images/${theName}.1440.jpg 1440w,images/${theName}.1080.jpg 1080w,images/${theName}.640.jpg 640w">
-				<img src="images/${theName}.jpg" alt="${thePictureAlt}">
-			</picture>`;
-		});
 		return html;
 	};
 
