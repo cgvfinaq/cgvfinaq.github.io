@@ -89,8 +89,7 @@
   };
   
 	replaceAmpImages = html => {
-		// Replace hero image
-		html = html.replace(/<amp\-img layout="responsive" srcset="images\/([a-z-]+)\.webp.+alt="(.+)" width="2000" height="1333">\s+<amp\-img.+<\/amp\-img>\s+<\/amp\-img>/, (match, theName, thePictureAlt) => {
+		html = html.replace(/<amp\-img alt="(.+?)" (.+?) src="images\/(.+?)\.webp.+?<\/amp\-img>.+?<\/amp\-img>/g, (match, thePictureAlt, ignore, theName) => {
 			return `<picture>
 				<source srcset="images/${theName}.webp 2000w,images/${theName}.1440.webp 1440w,images/${theName}.1080.webp 1080w,images/${theName}.640.webp 640w">
 				<source srcset="images/${theName}.jpg 2000w,images/${theName}.1440.jpg 1440w,images/${theName}.1080.jpg 1080w,images/${theName}.640.jpg 640w">
@@ -99,7 +98,7 @@
 		});
 
 		// Replace slides
-		html = html.replace(/<amp\-img class="mobirise-loader" srcset="images\/([a-z-]+)\.jpg.+alt="(.+)" width="2000" height="1333">[^-]+\-[^-]+\-img>/g, (match, theName, thePictureAlt) => {
+		html = html.replace(/<amp\-img alt="(.+?)" (.+?) src="images\/(.+?)\.jpg.+?<\/amp\-img>/g, (match, thePictureAlt, ignore, theName) => {
 			return `<picture>
 				<source srcset="images/${theName}.webp 2000w,images/${theName}.1440.webp 1440w,images/${theName}.1080.webp 1080w,images/${theName}.640.webp 640w">
 				<source srcset="images/${theName}.jpg 2000w,images/${theName}.1440.jpg 1440w,images/${theName}.1080.jpg 1080w,images/${theName}.640.jpg 640w">
@@ -107,14 +106,7 @@
 			</picture>`;
 		});
 		
-		// Replace article cards
-		return html.replace(/<amp\-img class="mobirise-loader" layout="responsive" srcset="images\/([a-z-]+)\.webp.+alt="(.+)" width="506" height="337">\s+<amp\-img.+<\/amp\-img>[^-]+\-[^-]+\-img>/g, (match, theName, thePictureAlt) => {
-			return `<picture>
-				<source srcset="images/${theName}.webp 2000w,images/${theName}.1440.webp 1440w,images/${theName}.1080.webp 1080w,images/${theName}.640.webp 640w">
-				<source srcset="images/${theName}.jpg 2000w,images/${theName}.1440.jpg 1440w,images/${theName}.1080.jpg 1080w,images/${theName}.640.jpg 640w">
-				<img src="images/${theName}.jpg" alt="${thePictureAlt}">
-			</picture>`;
-		});
+		return html;
 	};
 
 	scrollToFragment = url => {
@@ -149,13 +141,13 @@
 
 	setPageSpecificStyles = (response) => {
 		let selectors = [];
-		let destStyles = document.styleSheets[document.styleSheets.length - 2].cssRules;
+		let destStyles = this.getPageStyleRules();
 		for (let i = 0; i < destStyles.length; i++) {
 			if (destStyles[i].selectorText) {
 				selectors.push(destStyles[i].selectorText);
 			}
 		}
-		let pattern = selectors.map(selector => "^" + selector.replace('.', '\\.') + " ?{(.|\n)+?}").join("|");
+		let pattern = selectors.map(selector => selector.replace('.', '\\.') + " ?{.+?}").join("|");
 		pattern = pattern + "|\\.s\\d+ \\..+? ?{(.|\\n)+?}";
 		let regex = new RegExp(pattern, "gm");
 		
@@ -182,9 +174,19 @@
 		destStyles.innerText = svgStyles.join('');
 	};
 	setStyle = (found, name, destStyle) => {
-		let regex = new RegExp(name.replace('-', "\-") + ": (.+);", "m");
-		let value = found.match(regex)[1];
-		destStyle.style.setProperty(name, value);
+		let regex = new RegExp(name.replace('-', "\-") + ":([^};]+)");
+		let value = found.match(regex);
+		if (value != null) {
+			destStyle.style.setProperty(name, value[1]);
+		}
+	};
+	getPageStyleRules = () => {
+		for (let i = document.styleSheets.length - 1; i >=0; i--) {
+			let styleSheet = document.styleSheets[i];
+			if (styleSheet.ownerNode != null && styleSheet.ownerNode.id == "pageStyles") {
+				return styleSheet.cssRules;
+			}
+		}
 	};
 
   highlightMenu = (url, selected) => {
@@ -214,4 +216,4 @@
 
   };
 }
-const router = new Router();</script><style>.hero .container{padding:0}.hero .overlay{background-color:#000;opacity:{};}.popup{--ratio:1}@media (max-width:767px){.hero .container{padding-left:1rem;padding-right:1rem}}</style><style id="svgStyles"></style><div id="root"></div></div><amp-install-serviceworker class="i-amphtml-layout-nodisplay" data-no-service-worker-fallback-shell-url="https://pub.com/shell" data-no-service-worker-fallback-url-match=".*" hidden i-amphtml-layout="nodisplay" layout="nodisplay" src="sw.js"></amp-install-serviceworker><style amp-keyframes>@keyframes slide{0%{-webkit-transform:scale(1)}50%{opacity:.3;-webkit-transform:scale(2)}to{-webkit-transform:scale(1)}}</style>
+const router = new Router();</script><style id="pageStyles">.hero .container{padding:0}.hero .overlay{background-color:#000;opacity:{};}.popup{--ratio:1}@media (max-width:767px){.hero .container{padding-left:1rem;padding-right:1rem}}</style><style id="svgStyles"></style><div id="root"></div></div><amp-install-serviceworker class="i-amphtml-layout-nodisplay" data-no-service-worker-fallback-shell-url="https://pub.com/shell" data-no-service-worker-fallback-url-match=".*" hidden i-amphtml-layout="nodisplay" layout="nodisplay" src="sw.js"></amp-install-serviceworker><style amp-keyframes>@keyframes slide{0%{-webkit-transform:scale(1)}50%{opacity:.3;-webkit-transform:scale(2)}to{-webkit-transform:scale(1)}}</style>
