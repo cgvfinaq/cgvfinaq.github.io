@@ -1,6 +1,6 @@
 const staticCache = "healingmodels-cache-v3";
 var prefetchList = ["https://fonts.gstatic.com/s/lato/v17/S6u9w4BMUTPHh50XSwiPGQ.woff2","https://fonts.gstatic.com/s/lato/v17/S6u9w4BMUTPHh6UVSwiPGQ.woff2","https://fonts.gstatic.com/s/lato/v17/S6u9w4BMUTPHh7USSwiPGQ.woff2","https://fonts.gstatic.com/s/lato/v17/S6uyw4BMUTPHjx4wXg.woff2","https://cdn.ampproject.org/v0.js","https://cdn.ampproject.org/v0/amp-sidebar-0.1.js","https://cdn.ampproject.org/v0/amp-loader-0.1.js","https://cdn.ampproject.org/v0/amp-animation-0.1.js","https://cdn.ampproject.org/v0/amp-position-observer-0.1.js","https://cdn.ampproject.org/v0/amp-carousel-0.2.js","https://cdn.ampproject.org/v0/amp-selector-0.1.js","https://cdn.ampproject.org/v0/amp-lightbox-0.1.js"];
-var pageNames = ["how-i-cured-myself-of-porn","full-healing-in-seven-minutes-flat","hurting-too-much-to-hear-god","healing-methods-overview","how-do-i-stop-sinning","how-do-i-know-im-hearing-from-god","who-is-involved-in-healing","what-are-the-spiritual-senses","how-can-i-see-god","should-healing-be-free","story-method","whiteboard","unblocking-your-spiritual-senses","intercessory-and-personal-prayers","memory-unblocker","what-comes-to-mind","story-filter","verse-pack","index"];
+var pageNames = ["spa","how-i-cured-myself-of-porn","full-healing-in-seven-minutes-flat","hurting-too-much-to-hear-god","healing-methods-overview","how-do-i-stop-sinning","how-do-i-know-im-hearing-from-god","who-is-involved-in-healing","what-are-the-spiritual-senses","how-can-i-see-god","should-healing-be-free","story-method","whiteboard","unblocking-your-spiritual-senses","intercessory-and-personal-prayers","memory-unblocker","what-comes-to-mind","story-filter","verse-pack","index"];
 
 var supportsWebP = determineIfSupportWebp();
 var largestBreakPoint = 0;
@@ -64,8 +64,9 @@ self.addEventListener("fetch", function (fetchEvent) {
                     mSizes = cachedResponse ? JSON.parse(await cachedResponse.text()) : {};
                 });
             }
+
             let key, size;
-            [key, url, size] = determineFileToDownload(url);
+            [key, url, size] = determineFileToDownload(url, fetchEvent.request.mode === 'navigate');
 
             if (key in mSizes && mSizes[key] < size) {
                 return getFile(key, url, cache, size);
@@ -81,9 +82,8 @@ async function getFile(key, url, cache, size) {
     try {
         let networkResponse = await fetch(url);
         if (200 != networkResponse.status) {
-            let basename = url.split("/").pop();
-            if (404 == networkResponse.status && isSameOrigin(url) && basename.indexOf('.') === -1) {
-                return modifyResponse(networkResponse, { 'Did you mistype it?': `Did you mistype: ${basename}` });
+            if (404 == networkResponse.status && isMyHtmlPage(url)) {
+                return modifyResponse(networkResponse, { 'Did you mistype it?': `Did you mistype: ${basename(url)}` });
             }
             return networkResponse;
         }
@@ -108,6 +108,12 @@ async function getFile(key, url, cache, size) {
         return new Response(`Fetching ${url} has error: ${error}`, { status: 500});
     }
 }
+function basename(url) {
+    return url.split("/").pop();
+}
+function isMyHtmlPage(url) {
+    return isSameOrigin(url) && basename(url).indexOf('.') === -1;
+}
 function isSameOrigin(url) {
     return url.startsWith('/') || url.startsWith(this.location.origin);
 }
@@ -119,7 +125,7 @@ function prefetchRestOfSite(key, cache, size) {
 
     let suffix = size == 2000 ? '' : `.${size}`;
     pageNames.map(image => {
-        if (!(image in mSizes) || mSizes[image] < size) {
+        if (image != "spa" && (!(image in mSizes) || mSizes[image] < size)) {
             let key = `images/${image}.jpg`;
 
             cache.match(key).then(function (cachedResponse) {
@@ -150,9 +156,16 @@ function determineIfSupportWebp() {
 function imagePath(filename) {
     return supportsWebP ? filename.slice(0, -3) + 'webp' : filename;
 }
-function determineFileToDownload(url) {
+function determineFileToDownload(url, isNavigate) {
     if (!url.endsWith(".jpg") && !url.endsWith(".webp")) {
-        return [url, url, 2000];
+        let key = url;
+        if (this.isMyHtmlPage(url) && isNavigate) {
+            url = "/spa";
+            key = url;
+        } else if (isSameOrigin(url)) {
+            key = new URL(url).pathname;
+        }
+        return [key, url, 2000];
     }
 
     let fileName = url.split('/').pop().replace('.webp', '.jpg');
