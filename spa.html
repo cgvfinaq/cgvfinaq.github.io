@@ -182,7 +182,7 @@
 		let regex = new RegExp(pattern, "gm");
 		
 		let srcStyles = response.head.querySelectorAll("style");
-		srcStyles = srcStyles[srcStyles.length - 1].innerText;
+		srcStyles = srcStyles[srcStyles.length - 1].innerText.replaceAll("\n", "").replaceAll("\t", "");
 		
 		let svgStyles = [];
 		srcStyles.match(regex).map(found => {
@@ -230,8 +230,8 @@
 		} else {
 			li.classList.remove("nav-link-selected");
 		}
-		li.querySelector("span:first-child").style.setProperty("opacity", "0", "important");
-		li.querySelector("span:nth-child(2)").style.setProperty("opacity", "1", "important");
+		li.querySelector("div > div").style.setProperty("opacity", "0", "important");
+		li.querySelector("span").style.setProperty("opacity", "1", "important");
 	});
 
 	// Override amp's position listener until the first scroll event
@@ -243,8 +243,8 @@
   scrollListener() {
 	document.removeEventListener("scroll", this.scrollListener);
   	Array.from(document.querySelectorAll(".navbar-nav li")).map(li => {
-		li.querySelector("span:first-child").style.setProperty("opacity", "0", "");
-		li.querySelector("span:nth-child(2)").style.setProperty("opacity", "1", "");
+		li.querySelector("div > div").style.setProperty("opacity", "0", "");
+		li.querySelector("span").style.setProperty("opacity", "1", "");
 	});
   };
 }
