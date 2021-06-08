@@ -158,12 +158,8 @@
 		let theName = src.split('/')[1].split('.')[0];
 		let picture = response.createElement('picture');
 		
-		let webp = response.createElement('source');
-		webp.setAttribute('srcset', `images/${theName}.webp 2000w,images/${theName}.1440.webp 1440w,images/${theName}.1080.webp 1080w,images/${theName}.640.webp 640w`);
-		picture.appendChild(webp);
-		
 		let jpg = response.createElement('source');
-		webp.setAttribute('srcset', `images/${theName}.jpg 2000w,images/${theName}.1440.jpg 1440w,images/${theName}.1080.jpg 1080w,images/${theName}.640.jpg 640w`);
+		jpg.setAttribute('srcset', `images/${theName}.jpg 4x,images/${theName}.1440.jpg 3x,images/${theName}.1080.jpg 2x,images/${theName}.640.jpg 1x`);
 		picture.appendChild(jpg);
 		
 		let img = response.createElement('img');
